@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Floating Music Player Component</title>
+    <!-- Muat turun fon Inter untuk tipografi moden -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           GAYA LATAR BELAKANG DEMONSTRASI (UNIK & TIDAK MENGGANGGU KOMPONEN)
+           ========================================================================== */
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: #060812;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(139, 92, 246, 0.16) 0%, transparent 45%),
+                radial-gradient(circle at 85% 75%, rgba(6, 182, 212, 0.14) 0%, transparent 45%),
+                linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 44px 44px, 44px 44px;
+            color: #f8fafc;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .demo-showcase {
+            max-width: 820px;
+            width: 90%;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .demo-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            border-radius: 999px;
+            background: rgba(139, 92, 246, 0.12);
+            border: 1px solid rgba(139, 92, 246, 0.35);
+            color: #c4b5fd;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            box-shadow: 0 0 25px rgba(139, 92, 246, 0.2);
+        }
+
+        .demo-pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #06b6d4;
+            box-shadow: 0 0 10px #06b6d4;
+        }
+
+        .demo-title {
+            font-size: clamp(2rem, 5vw, 3.4rem);
+            font-weight: 700;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            margin: 0 0 18px 0;
+            background: linear-gradient(135deg, #ffffff 25%, #c4b5fd 65%, #67e8f9 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .demo-subtitle {
+            font-size: clamp(0.95rem, 2vw, 1.12rem);
+            line-height: 1.65;
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto 36px auto;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 36px;
+            text-align: left;
+        }
+
+        .demo-card {
+            background: rgba(15, 19, 34, 0.65);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 20px;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .demo-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .demo-card-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            color: #a78bfa;
+        }
+
+        .demo-card h3 {
+            margin: 0 0 6px 0;
+            font-size: 15px;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .demo-card p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #64748b;
+        }
+
+        .demo-hint {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .demo-hint span {
+            color: #38bdf8;
+            font-weight: 600;
+        }
+
+        /* ==========================================================================
+           FLOATING MUSIC PLAYER COMPONENT STYLES (ISOLATED WITH .afmp- PREFIX)
+           Susunan Center Alignment & Butang Utama Bersaiz Besar Premium
+           ========================================================================== */
+        
+        .afmp-container {
+            /* Pemboleh ubah warna & tema eksklusif */
+            --afmp-bg: rgba(13, 16, 30, 0.88);
+            --afmp-bg-hover: rgba(22, 26, 48, 0.96);
+            --afmp-border: rgba(255, 255, 255, 0.14);
+            --afmp-border-glow: rgba(139, 92, 246, 0.65);
+            --afmp-accent-primary: #8b5cf6; /* Electric Violet */
+            --afmp-accent-secondary: #06b6d4; /* Cyan Glow */
+            --afmp-text-main: #f8fafc;
+            --afmp-text-muted: #94a3b8;
+            --afmp-danger: #f43f5e;
+            --afmp-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.85), 0 0 28px rgba(139, 92, 246, 0.25);
+
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99999;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            pointer-events: none;
+            box-sizing: border-box;
+            width: max-content;
+            max-width: calc(100vw - 24px);
+        }
+
+        .afmp-container *,
+        .afmp-container *::before,
+        .afmp-container *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Panel Kawalan (Glassmorphism Drawer - Center Aligned) */
+        .afmp-panel {
+            pointer-events: auto;
+            width: 320px;
+            max-width: calc(100vw - 32px);
+            background: var(--afmp-bg);
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+            border: 1px solid var(--afmp-border);
+            border-radius: 24px;
+            padding: 18px 20px;
+            box-shadow: var(--afmp-shadow);
+            color: var(--afmp-text-main);
+            
+            /* Keadaan tersembunyi (Default) */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(16px) scale(0.94);
+            transform-origin: bottom center;
+            transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                        visibility 0.35s ease;
+        }
+
+        /* Keadaan panel terbuka */
+        .afmp-container.is-expanded .afmp-panel {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+        }
+
+        /* Header Panel: Status & Equalizer */
+        .afmp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .afmp-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--afmp-text-muted);
+            background: rgba(255, 255, 255, 0.06);
+            padding: 5px 12px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .afmp-container.is-playing .afmp-status-badge {
+            color: #ddd6fe;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.22), rgba(6, 182, 212, 0.15));
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.2);
+        }
+
+        .afmp-container.is-muted .afmp-status-badge {
+            color: #fda4af;
+            background: rgba(244, 63, 94, 0.16);
+            border-color: rgba(244, 63, 94, 0.35);
+        }
+
+        /* Visualizer Equalizer Bars */
+        .afmp-visualizer {
+            display: flex;
+            align-items: flex-end;
+            gap: 3.5px;
+            height: 18px;
+            padding: 2px 4px;
+        }
+
+        .afmp-bar {
+            width: 3.5px;
+            height: 4px;
+            background: linear-gradient(to top, var(--afmp-accent-primary), var(--afmp-accent-secondary));
+            border-radius: 4px;
+            transition: height 0.2s ease, opacity 0.3s ease;
+            opacity: 0.35;
+        }
+
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar {
+            opacity: 1;
+            animation: afmp-equalize 1.05s ease-in-out infinite alternate;
+        }
+
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar:nth-child(1) { animation-delay: 0.0s; }
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar:nth-child(2) { animation-delay: 0.22s; }
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar:nth-child(3) { animation-delay: 0.48s; }
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar:nth-child(4) { animation-delay: 0.14s; }
+        .afmp-container.is-playing:not(.is-muted) .afmp-bar:nth-child(5) { animation-delay: 0.36s; }
+
+        @keyframes afmp-equalize {
+            0% { height: 4px; }
+            50% { height: 17px; }
+            100% { height: 7px; }
+        }
+
+        /* Kawalan Utama di dalam Panel */
+        .afmp-controls-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        /* Butang Kawalan Kecil (Mute) */
+        .afmp-icon-btn {
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--afmp-text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .afmp-icon-btn:hover {
+            background: rgba(139, 92, 246, 0.25);
+            border-color: rgba(139, 92, 246, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .afmp-icon-btn:active {
+            transform: scale(0.92);
+        }
+
+        .afmp-icon-btn:focus-visible,
+        .afmp-fab:focus-visible,
+        .afmp-toggle-drawer:focus-visible {
+            outline: 2px solid var(--afmp-accent-secondary);
+            outline-offset: 3px;
+        }
+
+        /* Kawalan Slider Volume */
+        .afmp-volume-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .afmp-slider-wrap {
+            position: relative;
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+
+        .afmp-volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 999px;
+            outline: none;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .afmp-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 2px solid var(--afmp-accent-secondary);
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.9);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .afmp-volume-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.22);
+            box-shadow: 0 0 16px var(--afmp-accent-secondary);
+        }
+
+        .afmp-volume-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--afmp-accent-secondary);
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 0 12px rgba(139, 92, 246, 0.9);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .afmp-volume-text {
+            font-size: 12px;
+            font-weight: 700;
+            color: #cbd5e1;
+            min-width: 38px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Mesej Ralat Mesra Pengguna */
+        .afmp-error-msg {
+            display: none;
+            margin-top: 12px;
+            padding: 9px 12px;
+            border-radius: 12px;
+            background: rgba(244, 63, 94, 0.16);
+            border: 1px solid rgba(244, 63, 94, 0.35);
+            color: #fecdd3;
+            font-size: 11.5px;
+            line-height: 1.45;
+            text-align: center;
+        }
+
+        .afmp-error-msg.is-visible {
+            display: block;
+            animation: afmp-fadeIn 0.3s ease;
+        }
+
+        /* Baris Bawah: Dock Kapsul Berpusat (Center Aligned Dock) */
+        .afmp-fab-wrapper {
+            pointer-events: auto;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(13, 16, 30, 0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 18px 40px -8px rgba(0, 0, 0, 0.75),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.12);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .afmp-fab-wrapper:hover {
+            border-color: rgba(139, 92, 246, 0.45);
+            box-shadow: 0 20px 45px -8px rgba(0, 0, 0, 0.85),
+                        0 0 25px rgba(139, 92, 246, 0.22);
+        }
+
+        /* Butang Mini untuk Buka/Tutup Panel Kawalan */
+        .afmp-toggle-drawer {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--afmp-text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .afmp-toggle-drawer:hover {
+            color: #ffffff;
+            background: rgba(139, 92, 246, 0.25);
+            border-color: var(--afmp-border-glow);
+            transform: scale(1.08);
+        }
+
+        .afmp-toggle-drawer svg {
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .afmp-container.is-expanded .afmp-toggle-drawer svg {
+            transform: rotate(180deg);
+        }
+
+        /* Butang Utama Bulat BESAR (Hero Floating Music Button) */
+        .afmp-fab {
+            position: relative;
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255, 255, 255, 0.25);
+            background: radial-gradient(circle at 30% 25%, #312e81 0%, #1e1b4b 45%, #090d1e 100%);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 14px 32px rgba(0, 0, 0, 0.7),
+                        0 0 26px rgba(139, 92, 246, 0.45),
+                        inset 0 2px 6px rgba(255, 255, 255, 0.28);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                        box-shadow 0.35s ease,
+                        border-color 0.35s ease;
+        }
+
+        /* Lingkaran Cahaya Berputar (Orbital Glow Ring) */
+        .afmp-fab::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, var(--afmp-accent-primary), var(--afmp-accent-secondary), #ec4899, var(--afmp-accent-primary));
+            z-index: -1;
+            opacity: 0.65;
+            filter: blur(9px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .afmp-container.is-playing .afmp-fab::before {
+            opacity: 0.95;
+            animation: afmp-spinGlow 4s linear infinite;
+        }
+
+        @keyframes afmp-spinGlow {
+            from { transform: rotate(0deg) scale(1.04); }
+            to { transform: rotate(360deg) scale(1.04); }
+        }
+
+        /* Gelang Dalam Halus pada Butang Utama */
+        .afmp-fab::after {
+            content: '';
+            position: absolute;
+            inset: 5px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            pointer-events: none;
+        }
+
+        .afmp-fab:hover {
+            transform: scale(1.09);
+            border-color: rgba(196, 181, 253, 0.85);
+            box-shadow: 0 18px 38px rgba(139, 92, 246, 0.55),
+                        0 0 36px rgba(6, 182, 212, 0.45),
+                        inset 0 2px 8px rgba(255, 255, 255, 0.35);
+        }
+
+        .afmp-fab:active {
+            transform: scale(0.93);
+        }
+
+        /* Gelombang Denyutan (Pulse Ring) ketika muzik dimainkan */
+        .afmp-pulse-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 2px solid var(--afmp-accent-secondary);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .afmp-container.is-playing .afmp-pulse-ring {
+            animation: afmp-pulse 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+        }
+
+        @keyframes afmp-pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.75;
+            }
+            100% {
+                transform: scale(1.55);
+                opacity: 0;
+            }
+        }
+
+        /* Transisi Ikon Play / Pause yang Lancar & Besar */
+        .afmp-fab-icon {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+            transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .afmp-icon-play {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            margin-left: 3px;
+        }
+
+        .afmp-icon-pause {
+            opacity: 0;
+            transform: scale(0.5) rotate(-45deg);
+        }
+
+        .afmp-container.is-playing .afmp-icon-play {
+            opacity: 0;
+            transform: scale(0.5) rotate(45deg);
+        }
+
+        .afmp-container.is-playing .afmp-icon-pause {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+        }
+
+        @keyframes afmp-fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Penyesuaian Responsif untuk Skrin Kecil (Telefon Pintar) */
+        @media (max-width: 480px) {
+            .afmp-container {
+                bottom: 20px;
+            }
+
+            .afmp-panel {
+                width: 290px;
+                padding: 16px;
+            }
+
+            .afmp-fab {
+                width: 66px;
+                height: 66px;
+            }
+
+            .afmp-fab-icon {
+                width: 26px;
+                height: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==========================================================================
+         PAPARAN DEMONSTRASI LAMAN (Boleh dibuang apabila dipasang ke web sebenar)
+         ========================================================================== -->
+    <main class="demo-showcase">
+        <div class="demo-pill">
+            <span class="demo-pill-dot"></span>
+            Interactive Audio Component Preview
+        </div>
+
+        <h1 class="demo-title">Pengalaman Audio Latar Belakang Premium</h1>
+        <p class="demo-subtitle">
+            Komponen pemain muzik terapung dengan reka bentuk <em>glassmorphism</em>, animasi gelombang bunyi masa nyata, dan kawalan audio penuh yang sedia disepadukan ke mana-mana laman web.
+        </p>
+
+        <div class="demo-grid">
+            <div class="demo-card">
+                <div class="demo-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 18V5l12-2v13"></path>
+                        <circle cx="6" cy="18" r="3"></circle>
+                        <circle cx="18" cy="16" r="3"></circle>
+                    </svg>
+                </div>
+                <h3>Kawalan Audio Sebenar</h3>
+                <p>Sokongan penuh main, henti sementara, laras tahap bunyi 0%–100%, dan fungsi senyap pantas.</p>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                </div>
+                <h3>Visualizer Dinamik</h3>
+                <p>Bar equalizer responsif yang bergerak lembut selari dengan status main balik audio semasa.</p>
+            </div>
+
+            <div class="demo-card">
+                <div class="demo-card-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
+                    </svg>
+                </div>
+                <h3>Kod Terasing & Selamat</h3>
+                <p>Menggunakan awalan kelas khas <code>.afmp-</code> supaya tidak mengganggu susun atur CSS laman web asal.</p>
+            </div>
+        </div>
+
+        <div class="demo-hint">
+            👉 Tekan butang bulat besar bercahaya di bahagian <span>bawah tengah</span> skrin untuk mula mendengar muzik.
+        </div>
+    </main>
+
+    <!-- ==========================================================================
+         KOMPONEN FLOATING MUSIC PLAYER (Center-Aligned & Large Premium Button)
+         ========================================================================== -->
+    <div id="afmp-player" class="afmp-container" role="region" aria-label="Kawalan Pemain Muzik Latar Belakang">
+        
+        <!-- Elemen Audio HTML5 Sebenar dengan URL Rasmi -->
+        <audio id="afmp-audio" preload="metadata" loop crossorigin="anonymous">
+            <source src="https://raw.githubusercontent.com/AMIRUL278/maklum-balas/main/ssstik.io_1795707374059.mp3" type="audio/mpeg">
+            Pelayar web anda tidak menyokong elemen audio HTML5.
+        </audio>
+
+        <!-- Panel Kawalan Boleh Kembang (Glassmorphism Drawer) -->
+        <div id="afmp-panel" class="afmp-panel" aria-hidden="true">
+            
+            <!-- Bahagian Atas: Status Muzik & Visualizer Equalizer -->
+            <div class="afmp-header">
+                <div id="afmp-status" class="afmp-status-badge" aria-live="polite">
+                    ⏸ PAUSED
+                </div>
+
+                <!-- 5 Bar Equalizer Animasi -->
+                <div class="afmp-visualizer" aria-hidden="true" title="Audio Visualizer">
+                    <span class="afmp-bar"></span>
+                    <span class="afmp-bar"></span>
+                    <span class="afmp-bar"></span>
+                    <span class="afmp-bar"></span>
+                    <span class="afmp-bar"></span>
+                </div>
+            </div>
+
+            <!-- Bahagian Kawalan: Mute/Unmute & Slider Volume -->
+            <div class="afmp-controls-row">
+                <!-- Butang Mute / Unmute -->
+                <button type="button" id="afmp-mute-btn" class="afmp-icon-btn" aria-label="Senyapkan audio (Mute)" title="Mute / Unmute">
+                    <!-- Ikon Volume Aktif -->
+                    <svg id="afmp-vol-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+                    </svg>
+                    <!-- Ikon Volume Senyap (Muted) -->
+                    <svg id="afmp-vol-icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                </button>
+
+                <!-- Kawalan Slider Volume 0% - 100% -->
+                <div class="afmp-volume-group">
+                    <div class="afmp-slider-wrap">
+                        <input 
+                            type="range" 
+                            id="afmp-volume-slider" 
+                            class="afmp-volume-slider" 
+                            min="0" 
+                            max="100" 
+                            value="80" 
+                            aria-label="Laraskan tahap bunyi"
+                        >
+                    </div>
+                    <span id="afmp-volume-value" class="afmp-volume-text">80%</span>
+                </div>
+            </div>
+
+            <!-- Paparan Ralat Mesra Pengguna (Jika audio gagal dimuatkan) -->
+            <div id="afmp-error-box" class="afmp-error-msg" role="alert">
+                Maaf, fail audio tidak dapat dimuatkan buat masa ini. Sila semak sambungan internet anda dan cuba lagi.
+            </div>
+        </div>
+
+        <!-- Baris Butang Terapung di Penjuru Kanan Bawah -->
+        <div class="afmp-fab-wrapper">
+            <!-- Butang Kecil untuk Buka / Tutup Panel Kawalan Volume -->
+            <button type="button" id="afmp-drawer-btn" class="afmp-toggle-drawer" aria-label="Buka panel kawalan audio" aria-expanded="false" title="Kawalan Volume & Status">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="18 15 12 9 6 15"></polyline>
+                </svg>
+            </button>
+
+            <!-- Butang Utama Bulat BESAR Play / Pause -->
+            <button type="button" id="afmp-main-btn" class="afmp-fab" aria-label="Mainkan muzik latar belakang" aria-pressed="false" title="Main / Henti Sementara Muzik">
+                <span class="afmp-pulse-ring" aria-hidden="true"></span>
+                
+                <!-- Ikon Play -->
+                <svg class="afmp-fab-icon afmp-icon-play" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5.14v14l11-7-11-7z"/>
+                </svg>
+
+                <!-- Ikon Pause -->
+                <svg class="afmp-fab-icon afmp-icon-pause" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1.5"/>
+                    <rect x="14" y="4" width="4" height="16" rx="1.5"/>
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        /**
+         * INTERACTIVE FLOATING MUSIC PLAYER CONTROLLER
+         * Menggunakan IIFE (Immediately Invoked Function Expression) untuk mengelakkan
+         * pencemaran global scope pada laman web sedia ada.
+         */
+        (function () {
+            'use strict';
+
+            // Rujukan Elemen DOM
+            const container = document.getElementById('afmp-player');
+            const audio = document.getElementById('afmp-audio');
+            const mainBtn = document.getElementById('afmp-main-btn');
+            const drawerBtn = document.getElementById('afmp-drawer-btn');
+            const panel = document.getElementById('afmp-panel');
+            const muteBtn = document.getElementById('afmp-mute-btn');
+            const volIconOn = document.getElementById('afmp-vol-icon-on');
+            const volIconOff = document.getElementById('afmp-vol-icon-off');
+            const volumeSlider = document.getElementById('afmp-volume-slider');
+            const volumeValue = document.getElementById('afmp-volume-value');
+            const statusBadge = document.getElementById('afmp-status');
+            const errorBox = document.getElementById('afmp-error-box');
+
+            // Pemboleh ubah keadaan (State)
+            let previousVolume = 0.8; // Simpan tahap volume sebelum mute (80%)
+            let isExpanded = false;
+            let hasInteracted = false;
+
+            // Tetapkan volume permulaan
+            audio.volume = previousVolume;
+            updateSliderFill(80);
+
+            /**
+             * Mengemas kini warna trek slider mengikut peratusan semasa
+             */
+            function updateSliderFill(percent) {
+                volumeSlider.style.background = `linear-gradient(to right, #8b5cf6 0%, #06b6d4 ${percent}%, rgba(255, 255, 255, 0.15) ${percent}%)`;
+            }
+
+            /**
+             * Menyelaraskan paparan UI berdasarkan keadaan sebenar elemen <audio>
+             */
+            function syncUIState() {
+                const isPlaying = !audio.paused && !audio.ended;
+                const isMuted = audio.muted || audio.volume === 0;
+
+                // Kemas kini kelas kontena utama
+                container.classList.toggle('is-playing', isPlaying);
+                container.classList.toggle('is-muted', isMuted);
+
+                // Kemas kini atribut aksesibiliti butang utama
+                mainBtn.setAttribute('aria-pressed', String(isPlaying));
+                mainBtn.setAttribute('aria-label', isPlaying ? 'Hentikan muzik sementara' : 'Mainkan muzik latar belakang');
+
+                // Kemas kini ikon Mute / Unmute
+                if (isMuted) {
+                    volIconOn.style.display = 'none';
+                    volIconOff.style.display = 'block';
+                    muteBtn.setAttribute('aria-label', 'Nyahsenyap audio (Unmute)');
+                } else {
+                    volIconOn.style.display = 'block';
+                    volIconOff.style.display = 'none';
+                    muteBtn.setAttribute('aria-label', 'Senyapkan audio (Mute)');
+                }
+
+                // Kemas kini teks Status Muzik secara automatik
+                if (isMuted && isPlaying) {
+                    statusBadge.textContent = '🔇 MUTED';
+                } else if (isPlaying) {
+                    statusBadge.textContent = '🎵 NOW PLAYING';
+                } else if (isMuted) {
+                    statusBadge.textContent = '🔇 MUTED';
+                } else {
+                    statusBadge.textContent = '⏸ PAUSED';
+                }
+            }
+
+            /**
+             * Buka atau tutup panel kawalan volume
+             */
+            function togglePanel(forceState) {
+                isExpanded = typeof forceState === 'boolean' ? forceState : !isExpanded;
+                container.classList.toggle('is-expanded', isExpanded);
+                panel.setAttribute('aria-hidden', String(!isExpanded));
+                drawerBtn.setAttribute('aria-expanded', String(isExpanded));
+                drawerBtn.setAttribute('aria-label', isExpanded ? 'Tutup panel kawalan audio' : 'Buka panel kawalan audio');
+            }
+
+            /**
+             * Fungsi utama Play / Pause dengan pengendalian ralat Promise
+             */
+            async function togglePlayPause() {
+                // Sembunyikan mesej ralat terdahulu jika ada
+                errorBox.classList.remove('is-visible');
+
+                try {
+                    if (audio.paused) {
+                        await audio.play();
+                        // Buka panel kawalan secara automatik pada interaksi pertama untuk kemudahan pengguna
+                        if (!hasInteracted) {
+                            hasInteracted = true;
+                            togglePanel(true);
+                        }
+                    } else {
+                        audio.pause();
+                    }
+                } catch (err) {
+                    console.error('Ralat memainkan audio:', err);
+                    errorBox.textContent = 'Gagal memainkan muzik. Sila pastikan sambungan internet aktif atau cuba tekan sekali lagi.';
+                    errorBox.classList.add('is-visible');
+                    togglePanel(true);
+                    syncUIState();
+                }
+            }
+
+            /**
+             * Fungsi Mute / Unmute tanpa menghentikan playback
+             */
+            function toggleMute() {
+                if (audio.muted || audio.volume === 0) {
+                    audio.muted = false;
+                    // Pulihkan volume sebelumnya jika volume semasa ialah 0
+                    if (audio.volume === 0) {
+                        audio.volume = previousVolume > 0 ? previousVolume : 0.5;
+                    }
+                    const currentPercent = Math.round(audio.volume * 100);
+                    volumeSlider.value = currentPercent;
+                    volumeValue.textContent = `${currentPercent}%`;
+                    updateSliderFill(currentPercent);
+                } else {
+                    previousVolume = audio.volume;
+                    audio.muted = true;
+                    volumeSlider.value = 0;
+                    volumeValue.textContent = '0%';
+                    updateSliderFill(0);
+                }
+                syncUIState();
+            }
+
+            /**
+             * Pengendali perubahan slider volume (0% - 100%)
+             */
+            function handleVolumeInput(event) {
+                const percent = parseInt(event.target.value, 10);
+                const normalizedVolume = percent / 100;
+
+                audio.volume = normalizedVolume;
+                volumeValue.textContent = `${percent}%`;
+                updateSliderFill(percent);
+
+                if (percent === 0) {
+                    audio.muted = true;
+                } else {
+                    audio.muted = false;
+                    previousVolume = normalizedVolume;
+                }
+
+                syncUIState();
+            }
+
+            // ==========================================================================
+            // EVENT LISTENERS (UI & AUDIO EVENTS)
+            // ==========================================================================
+
+            // Klik butang bulat utama (Play/Pause)
+            mainBtn.addEventListener('click', togglePlayPause);
+
+            // Klik butang buka/tutup panel kawalan
+            drawerBtn.addEventListener('click', function () {
+                togglePanel();
+            });
+
+            // Klik butang Mute/Unmute
+            muteBtn.addEventListener('click', toggleMute);
+
+            // Perubahan slider volume secara masa nyata
+            volumeSlider.addEventListener('input', handleVolumeInput);
+
+            // Event listener rasmi HTML5 Audio untuk memastikan UI sentiasa selari
+            audio.addEventListener('play', syncUIState);
+            audio.addEventListener('pause', syncUIState);
+            audio.addEventListener('volumechange', syncUIState);
+            audio.addEventListener('ended', syncUIState);
+
+            // Pengendalian ralat apabila sumber MP3 gagal dimuatkan
+            audio.addEventListener('error', function () {
+                errorBox.textContent = 'Sumber audio tidak dapat dicapai. Sila semak rangkaian anda.';
+                errorBox.classList.add('is-visible');
+                togglePanel(true);
+                syncUIState();
+            });
+
+            // Sokongan kekunci pintas (Keyboard Accessibility: Tekan 'Escape' untuk tutup panel)
+            container.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && isExpanded) {
+                    togglePanel(false);
+                    drawerBtn.focus();
+                }
+            });
+
+            // Inisialisasi keadaan awal
+            syncUIState();
+        })();
+    </script>
+</body>
+</html>
